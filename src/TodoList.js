@@ -1,89 +1,72 @@
 import React, { useState, useEffect } from 'react'
 import './TodoList.css'
+import Cookies from 'js-cookie';
 
 const TodoList = () => {
     const [todos, setTodos] = useState([]);
     const [input, setInput] = useState('');
 
     useEffect(() => {
-        fetchData();
+        const storedTodos = Cookies.get('todos');
+        if (storedTodos) {
+            setTodos(JSON.parse(storedTodos));
+        }
     }, []);
     
-    const fetchData = () => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', 'http://localhost:5000/api/todos', true);
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                setTodos(JSON.parse(xhr.responseText));
-            }
-        };
-        xhr.send();
-    };
+    useEffect(() => {
+        Cookies.set('todos', JSON.stringify(todos));
+    }, [todos]);
     
     const handleAddTodo = () => {
         if (!input) {
             alert('Input cannot be empty!');
             return;
         }
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', 'http://localhost:5000/api/todos', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                setTodos([...todos, JSON.parse(xhr.responseText)]);
-                setInput('');
-            }
-        };
-        xhr.send(JSON.stringify({ task: input, completed: false }));
+        setTodos([...todos, { task: input, completed: false }]);
+        setInput('');
     };
     
-    const handleDeleteTodo = (id) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('DELETE', `http://localhost:5000/api/todos/${id}`, true);
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                fetchData();
-            }
-        };
-        xhr.send();
+    const handleDeleteTodo = (index) => {
+        const newTodos = [...todos];
+        newTodos.splice(index, 1);
+        setTodos(newTodos);
     };
     
-    const handleDeleteAll = () => {
-        todos.forEach((todo) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open('DELETE', `http://localhost:5000/api/todos/`, true);
-            xhr.onload = function () {
-                if (xhr.status === 200) {
-                    fetchData();
-                }
-            };
-            xhr.send();
-        });
+    const handleToggleTodo = (index) => {
+        const newTodos = [...todos];
+        newTodos[index].completed = !newTodos[index].completed;
+        setTodos(newTodos);
     };
     
     return (
-        <div>
+        <div className='container-todo'>
             <input
+                className='input-form'
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Add Todo"
             />
-            <button onClick={handleAddTodo}>Add</button>
+            <button
+                className='addBtn'
+                onClick={handleAddTodo}>Add</button>
             <ul>
                 {todos.map((todo, index) => (
                     <li key={index}>
-                        {todo.task}{' '}
-                        <button onClick={() => handleDeleteTodo(index)}>Done</button>
+                        <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                            {todo.task}
+                        </span>
+                        <button className='opsBtn' onClick={() => handleToggleTodo(index)}>
+                            {todo.completed ? 'Belum Selesai' : 'Selesai'}
+                        </button>
+                        <button className='deleteBtn' onClick={() => handleDeleteTodo(index)}>Delete</button>
                     </li>
-                    
+    
                 ))}
-                {todos.length > 1 && (
-                    <button onClick={handleDeleteAll}>Done All</button>
-                )}
             </ul>
         </div>
     );
-                }    
+    
+}
+
 
 export default TodoList;
-
